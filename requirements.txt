@@ -2,3 +2,4 @@ beautifulsoup4==4.8.2
 numpy==1.24.2
 requests==2.22.0
 sounddevice==0.4.6
+lxml==4.5.0
