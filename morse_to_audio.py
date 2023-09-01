@@ -78,7 +78,10 @@ class morse_to_audio(object):
     '_': [  6,  int('00001101', 2)]  # Not.in.ITU-R.recommendation
     }
 
-    def __init__(self, wpm=30, amplitude=0.2, frequency=440, Farnsworth=False, doubleFarnsworth=False, declick_cycles=1.5):
+    def __init__(self, wpm=35, amplitude=0.2, frequency=500, Farnsworth=False, doubleFarnsworth=False, declick_cycles=1.5):
+        # portions of this sinewave generation code borrowed from python-sounddevice/examples/play_sine.py 
+        # which is at https://github.com/spatialaudio/python-sounddevice/blob/master/examples/play_sine.py
+        # and is Copyright (c) 2015-2023 Matthias Geier
 
         # set local variables
         samplerate = sd.query_devices(None, 'output')['default_samplerate']
@@ -119,10 +122,11 @@ class morse_to_audio(object):
         # define a dit as a numpy array of samples
         adit=np.empty((samples_per_dit,1), dtype=float)        
         sample_times=np.arange(0.0, (1.0 / samplerate * samples_per_dit), (1.0 / samplerate))  # define time, in seconds, of each sample for sin function
-        # BUG: arange is not numerically stable. 
-        #  Fix using these suggestions: https://stackoverflow.com/questions/48043004/how-do-i-generate-a-sine-wave-using-python
-
-        sample_times=sample_times.reshape((samples_per_dit,1))
+        
+        # FIXED: arange is not numerically stable. sometimes sample_times gets one too many samples. Fixed with slice to :samples_per_dit below.
+        #sample_times=sample_times.reshape((samples_per_dit,1))
+        sample_times=sample_times[:samples_per_dit].reshape((samples_per_dit,1))
+        
         adit[:] = amplitude * np.sin(2 * np.pi * frequency * sample_times)
         aspace=np.empty((samples_per_dit,1), dtype=float)        
         aspace[:] = 0 * np.sin(2 * np.pi * frequency * sample_times)
@@ -138,8 +142,8 @@ class morse_to_audio(object):
             awordspace=np.concatenate((awordspace, aspace, aspace),axis=0)  # 2 extra units
 
         if doubleFarnsworth:
-            acharspace=np.concatenate((acharspace, acharspace),axis=0)  
-            awordspace=np.concatenate((awordspace, awordspace),axis=0) 
+            acharspace=np.concatenate((acharspace, acharspace, acharspace),axis=0)  
+            awordspace=np.concatenate((awordspace, awordspace, acharspace),axis=0) 
 
         #print (f"init: adit.shape {adit.shape}")
         #print (f"init: adah.shape {adah.shape}")
@@ -232,8 +236,7 @@ class morse_to_audio(object):
 
 if __name__ == '__main__':
     mo = morse_to_audio()
-    mo.play_text("""CQ CQ DE K5DRU
-K 
-eish5 5hsie""")
+    mo.play_text("""CQ CQ DE K5DRU       
+                 UR RST 599 599 BK""")
 
 
